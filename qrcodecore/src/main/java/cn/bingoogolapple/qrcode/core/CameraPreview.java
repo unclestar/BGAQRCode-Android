@@ -49,7 +49,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         }
         stopCameraPreview();
 
-		mshowCameraHandler.post(new Runnable(){
+		post(new Runnable(){
 			public void run(){
 				showCameraPreview();
 			}

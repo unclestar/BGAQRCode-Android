@@ -3,7 +3,6 @@ package cn.bingoogolapple.qrcode.zxing;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.os.AsyncTask;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
@@ -20,83 +19,78 @@ import java.util.Map;
  * 描述:创建二维码图片
  */
 public class QRCodeEncoder {
-    public static final Map<EncodeHintType, Object> HINTS = new EnumMap<EncodeHintType, Object>(EncodeHintType.class);
+    public static final Map<EncodeHintType, Object> HINTS = new EnumMap<>(EncodeHintType.class);
 
     static {
         HINTS.put(EncodeHintType.CHARACTER_SET, "utf-8");
         HINTS.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);
+        HINTS.put(EncodeHintType.MARGIN, 0);
     }
 
     private QRCodeEncoder() {
     }
 
     /**
-     * 创建黑色的二维码图片
+     * 同步创建黑色前景色、白色背景色的二维码图片。该方法是耗时操作，请在子线程中调用。
      *
-     * @param content
-     * @param size     图片宽高，单位为px
-     * @param delegate 创建二维码图片的代理
+     * @param content 要生成的二维码图片内容
+     * @param size    图片宽高，单位为px
      */
-    public static void encodeQRCode(String content, int size, Delegate delegate) {
-        QRCodeEncoder.encodeQRCode(content, size, Color.BLACK, delegate);
+    public static Bitmap syncEncodeQRCode(String content, int size) {
+        return syncEncodeQRCode(content, size, Color.BLACK, Color.WHITE, null);
     }
 
     /**
-     * 创建指定颜色的二维码图片
+     * 同步创建指定前景色、白色背景色的二维码图片。该方法是耗时操作，请在子线程中调用。
      *
-     * @param content
-     * @param size     图片宽高，单位为px
-     * @param color    二维码图片的颜色
-     * @param delegate 创建二维码图片的代理
+     * @param content         要生成的二维码图片内容
+     * @param size            图片宽高，单位为px
+     * @param foregroundColor 二维码图片的前景色
      */
-    public static void encodeQRCode(final String content, final int size, final int color, final Delegate delegate) {
-        encodeQRCode(content, size, color, null, delegate);
+    public static Bitmap syncEncodeQRCode(String content, int size, int foregroundColor) {
+        return syncEncodeQRCode(content, size, foregroundColor, Color.WHITE, null);
     }
 
     /**
-     * 创建指定颜色的、带logo的二维码图片
+     * 同步创建指定前景色、白色背景色、带logo的二维码图片。该方法是耗时操作，请在子线程中调用。
      *
-     * @param content
-     * @param size     图片宽高，单位为px
-     * @param color    二维码图片的颜色
-     * @param logo     二维码图片的logo
-     * @param delegate 创建二维码图片的代理
+     * @param content         要生成的二维码图片内容
+     * @param size            图片宽高，单位为px
+     * @param foregroundColor 二维码图片的前景色
+     * @param logo            二维码图片的logo
      */
-    public static void encodeQRCode(final String content, final int size, final int color, final Bitmap logo, final Delegate delegate) {
-        new AsyncTask<Void, Void, Bitmap>() {
-            @Override
-            protected Bitmap doInBackground(Void... params) {
-                try {
-                    BitMatrix matrix = new MultiFormatWriter().encode(content, BarcodeFormat.QR_CODE, size, size, HINTS);
-                    int[] pixels = new int[size * size];
-                    for (int y = 0; y < size; y++) {
-                        for (int x = 0; x < size; x++) {
-                            if (matrix.get(x, y)) {
-                                pixels[y * size + x] = color;
-                            } else {
-                                pixels[y * size + x] = Color.WHITE;
-                            }
-                        }
-                    }
-                    Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-                    bitmap.setPixels(pixels, 0, size, 0, 0, size, size);
-                    return addLogoToQRCode(bitmap, logo);
-                } catch (Exception e) {
-                    return null;
-                }
-            }
+    public static Bitmap syncEncodeQRCode(String content, int size, int foregroundColor, Bitmap logo) {
+        return syncEncodeQRCode(content, size, foregroundColor, Color.WHITE, logo);
+    }
 
-            @Override
-            protected void onPostExecute(Bitmap bitmap) {
-                if (delegate != null) {
-                    if (bitmap != null) {
-                        delegate.onEncodeQRCodeSuccess(bitmap);
+    /**
+     * 同步创建指定前景色、指定背景色、带logo的二维码图片。该方法是耗时操作，请在子线程中调用。
+     *
+     * @param content         要生成的二维码图片内容
+     * @param size            图片宽高，单位为px
+     * @param foregroundColor 二维码图片的前景色
+     * @param backgroundColor 二维码图片的背景色
+     * @param logo            二维码图片的logo
+     */
+    public static Bitmap syncEncodeQRCode(String content, int size, int foregroundColor, int backgroundColor, Bitmap logo) {
+        try {
+            BitMatrix matrix = new MultiFormatWriter().encode(content, BarcodeFormat.QR_CODE, size, size, HINTS);
+            int[] pixels = new int[size * size];
+            for (int y = 0; y < size; y++) {
+                for (int x = 0; x < size; x++) {
+                    if (matrix.get(x, y)) {
+                        pixels[y * size + x] = foregroundColor;
                     } else {
-                        delegate.onEncodeQRCodeFailure();
+                        pixels[y * size + x] = backgroundColor;
                     }
                 }
             }
-        }.execute();
+            Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+            bitmap.setPixels(pixels, 0, size, 0, 0, size, size);
+            return addLogoToQRCode(bitmap, logo);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**
@@ -129,19 +123,5 @@ public class QRCodeEncoder {
             bitmap = null;
         }
         return bitmap;
-    }
-
-    public interface Delegate {
-        /**
-         * 创建二维码图片成功
-         *
-         * @param bitmap
-         */
-        void onEncodeQRCodeSuccess(Bitmap bitmap);
-
-        /**
-         * 创建二维码图片失败
-         */
-        void onEncodeQRCodeFailure();
     }
 }

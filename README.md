@@ -14,12 +14,14 @@
 ## 功能介绍
 根据[之前公司](http://www.iqegg.com)的产品需求，参考 [barcodescanner](https://github.com/dm77/barcodescanner) 改的，希望能帮助到有生成二维码、扫描二维码、识别图片二维码等需求的猿友。修改幅度较大，也就没准备针对 [barcodescanner](https://github.com/dm77/barcodescanner) 库提交PR。
 
-* ZXing 生成可自定义颜色、带 logo 的二维码
-* ZXing 扫描二维码
-* ZXing 识别图库中的二维码图片
-* 可以控制闪光灯，方便夜间使用
-* 可以定制各式各样的扫描框
-* ZBar 扫描二维码「扫描中文会有乱码，如果对中文有要求，请使用 ZXing」
+- [x] ZXing 生成可自定义颜色、带 logo 的二维码
+- [x] ZXing 扫描二维码
+- [x] ZXing 识别图库中的二维码图片
+- [x] 可以设置用前置摄像头扫描
+- [x] 可以控制闪光灯，方便夜间使用
+- [x] 可以定制各式各样的扫描框
+- [x] 可定制全屏扫描或只识别扫描框区域内的二维码
+- [x] ZBar 扫描二维码「扫描中文会有乱码，如果对中文有要求，请使用 ZXing」
 
 ## 常见问题
 #### 1.宽高一定要填充除了状态栏以外的其余部分
@@ -42,11 +44,11 @@ android:layout_height="match_parent"
 
 ## 效果图与示例 apk
 
-![Image of zbar](http://7xk9dj.com1.z0.glb.clouddn.com/qrcode/screenshots/zbar109.gif?imageView2/2/w/250)
-![Image of zxingbarcode](http://7xk9dj.com1.z0.glb.clouddn.com/qrcode/screenshots/zxingbarcode109.gif?imageView2/2/w/250)
-![Image of zxingdecode](http://7xk9dj.com1.z0.glb.clouddn.com/qrcode/screenshots/zxingdecode109.gif?imageView2/2/w/250)
-![Image of zxingqrcode](http://7xk9dj.com1.z0.glb.clouddn.com/qrcode/screenshots/zxingqrcode109.gif?imageView2/2/w/250)
-![Image of 小蛋空气净化器](http://7xk9dj.com1.z0.glb.clouddn.com/qrcode/screenshots/iqegg.gif?imageView2/2/w/250)
+![zbar109](https://cloud.githubusercontent.com/assets/8949716/17475203/5d788730-5d8c-11e6-836a-61e885e05453.gif)
+![zxingbarcode109](https://cloud.githubusercontent.com/assets/8949716/17475222/76339bd4-5d8c-11e6-934f-96db6917f69b.gif)
+![zxingdecode109](https://cloud.githubusercontent.com/assets/8949716/17475235/8c03b2be-5d8c-11e6-931d-a50942a8ab75.gif)
+![zxingqrcode109](https://cloud.githubusercontent.com/assets/8949716/17475249/a551cc06-5d8c-11e6-85dc-4e2e07051cae.gif)
+![iqegg](https://cloud.githubusercontent.com/assets/8949716/17475267/bd9c0a60-5d8c-11e6-8487-c732306debe2.gif)
 
 | [点击下载 ZXingDemo.apk](http://fir.im/ZXingDemo)或扫描下面的二维码安装 | [点击下载 ZBarDemo.apk](http://fir.im/ZBarDemo)或扫描下面的二维码安装 |
 | :------------: | :------------: |
@@ -143,6 +145,7 @@ qrcv_tipBackgroundColor         | 提示文案的背景色        | #22000000
 qrcv_isScanLineReverse         | 扫描线是否来回移动        | true
 qrcv_isShowDefaultGridScanLineDrawable         | 是否显示默认的网格图片扫描线        | false
 qrcv_customGridScanLineDrawable         | 扫描线的网格图片资源        | nulll
+qrcv_isOnlyDecodeScanBoxArea         | 是否只识别扫描框区域的二维码        | false
 
 ## 接口说明
 
@@ -167,9 +170,16 @@ public void showScanRect()
 public void hiddenScanRect()
 
 /**
- * 打开摄像头开始预览，但是并未开始识别
+ * 打开后置摄像头开始预览，但是并未开始识别
  */
 public void startCamera()
+
+/**
+ * 打开指定摄像头开始预览，但是并未开始识别
+ *
+ * @param cameraFacing  Camera.CameraInfo.CAMERA_FACING_BACK or Camera.CameraInfo.CAMERA_FACING_FRONT
+ */
+public void startCamera(int cameraFacing)
 
 /**
  * 关闭摄像头预览，并且隐藏扫描框
@@ -230,82 +240,66 @@ void onScanQRCodeSuccess(String result)
 void onScanQRCodeOpenCameraError()
 ```
 
->QRCodeDecoder  解析二维码图片
+>QRCodeDecoder  解析二维码图片。几个重载方法都是耗时操作，请在子线程中调用。
 
 ```java
 /**
- * 解析二维码图片
+ * 同步解析本地图片二维码。该方法是耗时操作，请在子线程中调用。
  *
- * @param bitmap   要解析的二维码图片
- * @param delegate 解析二位码图片的代理
+ * @param picturePath 要解析的二维码图片本地路径
+ * @return 返回二维码图片里的内容 或 null
  */
-public static void decodeQRCode(Bitmap bitmap, Delegate delegate)
+public static String syncDecodeQRCode(String picturePath)
+
+/**
+ * 同步解析bitmap二维码。该方法是耗时操作，请在子线程中调用。
+ *
+ * @param bitmap 要解析的二维码图片
+ * @return 返回二维码图片里的内容 或 null
+ */
+public static String syncDecodeQRCode(Bitmap bitmap)
 ```
 
->QRCodeDecoder.Delegate  解析二位码图片的代理
+>QRCodeEncoder  创建二维码图片。几个重载方法都是耗时操作，请在子线程中调用。
 
 ```java
 /**
- * 解析二维码成功
+ * 同步创建黑色前景色、白色背景色的二维码图片。该方法是耗时操作，请在子线程中调用。
  *
- * @param result 从二维码中解析的文本，如果该方法有被调用，result不会为空
+ * @param content 要生成的二维码图片内容
+ * @param size    图片宽高，单位为px
  */
-void onDecodeQRCodeSuccess(String result)
+public static Bitmap syncEncodeQRCode(String content, int size)
 
 /**
- * 解析二维码失败
- */
-void onDecodeQRCodeFailure()
-```
-
->QRCodeEncoder  创建二维码图片
-
-```java
-/**
- * 创建黑色的二维码图片
+ * 同步创建指定前景色、白色背景色的二维码图片。该方法是耗时操作，请在子线程中调用。
  *
- * @param content
- * @param size     图片宽高，单位为px
- * @param delegate 创建二维码图片的代理
+ * @param content         要生成的二维码图片内容
+ * @param size            图片宽高，单位为px
+ * @param foregroundColor 二维码图片的前景色
  */
-public static void encodeQRCode(String content, int size, Delegate delegate)
+public static Bitmap syncEncodeQRCode(String content, int size, int foregroundColor)
 
 /**
- * 创建指定颜色的二维码图片
+ * 同步创建指定前景色、白色背景色、带logo的二维码图片。该方法是耗时操作，请在子线程中调用。
  *
- * @param content
- * @param size     图片宽高，单位为px
- * @param color    二维码图片的颜色
- * @param delegate 创建二维码图片的代理
+ * @param content         要生成的二维码图片内容
+ * @param size            图片宽高，单位为px
+ * @param foregroundColor 二维码图片的前景色
+ * @param logo            二维码图片的logo
  */
-public static void encodeQRCode(String content, int size, int color, Delegate delegate)
+public static Bitmap syncEncodeQRCode(String content, int size, int foregroundColor, Bitmap logo)
 
 /**
- * 创建指定颜色的、带logo的二维码图片
+ * 同步创建指定前景色、指定背景色、带logo的二维码图片。该方法是耗时操作，请在子线程中调用。
  *
- * @param content
- * @param size     图片宽高，单位为px
- * @param color    二维码图片的颜色
- * @param logo     二维码图片的logo
- * @param delegate 创建二维码图片的代理
+ * @param content         要生成的二维码图片内容
+ * @param size            图片宽高，单位为px
+ * @param foregroundColor 二维码图片的前景色
+ * @param backgroundColor 二维码图片的背景色
+ * @param logo            二维码图片的logo
  */
-public static void encodeQRCode(final String content, final int size, final int color, final Bitmap logo, final Delegate delegate)
-```
-
->QRCodeEncoder.Delegate   创建二维码图片的代理
-
-```java
-/**
- * 创建二维码图片成功
- *
- * @param bitmap
- */
-void onEncodeQRCodeSuccess(Bitmap bitmap)
-
-/**
- * 创建二维码图片失败
- */
-void onEncodeQRCodeFailure()
+public static Bitmap syncEncodeQRCode(String content, int size, int foregroundColor, int backgroundColor, Bitmap logo)
 ```
 
 #### 详细用法请查看[ZBarDemo](https://github.com/bingoogolapple/BGAQRCode-Android/tree/master/zbardemo):feet:
@@ -314,6 +308,14 @@ void onEncodeQRCodeFailure()
 
 ## 关于我
 
-| 新浪微博 | 个人主页 | 邮箱 | BGA系列开源库QQ群 | 如果你觉得这个库确实对你有帮助，可以考虑赞助我一块钱买机械键盘来撸代码 |
-| ------------ | ------------- | ------------ | ------------ | ------------ |
-| <a href="http://weibo.com/bingoogol" target="_blank">bingoogolapple</a> | <a  href="http://www.bingoogolapple.cn" target="_blank">bingoogolapple.cn</a>  | <a href="mailto:bingoogolapple@gmail.com" target="_blank">bingoogolapple@gmail.com</a> | ![BGA_CODE_CLUB](http://7xk9dj.com1.z0.glb.clouddn.com/BGA_CODE_CLUB.png?imageView2/2/w/200) | ![BGA_AliPay](http://7xk9dj.com1.z0.glb.clouddn.com/BGAAliPay.JPG?imageView2/2/w/300) |
+| 新浪微博 | 个人主页 | 邮箱 | BGA系列开源库QQ群
+| ------------ | ------------- | ------------ | ------------ |
+| <a href="http://weibo.com/bingoogol" target="_blank">bingoogolapple</a> | <a  href="http://www.bingoogolapple.cn" target="_blank">bingoogolapple.cn</a>  | <a href="mailto:bingoogolapple@gmail.com" target="_blank">bingoogolapple@gmail.com</a> | ![BGA_CODE_CLUB](http://7xk9dj.com1.z0.glb.clouddn.com/BGA_CODE_CLUB.png?imageView2/2/w/200) |
+
+## 打赏支持
+
+如果觉得 BGA 系列开源库对您有用，请随意打赏。
+
+<p align="center">
+  <img src="http://7xk9dj.com1.z0.glb.clouddn.com/bga_pay.png" width="450">
+</p>
